@@ -8,7 +8,8 @@ class RSvm(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
 
     def fit(self, X: np.array, y: np.array) -> "RSvm":
+        self.fitted_ = True
         return self
 
     def predict(self, X: np.array) -> np.array:
-        return np.random.randint(low=0, high=2, size=(X.shape[0],))
+        return np.ones((X.shape[0],), dtype=np.int8)
