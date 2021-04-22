@@ -8,7 +8,7 @@ from sklearn.exceptions import NotFittedError
 class RSvm_test(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         self._random_state = 1
-        self.clf = RSvm(random_state=self._random_state)
+        self.clf = RSvm(random_state=self._random_state, max_iter=10)
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -30,15 +30,16 @@ class RSvm_test(unittest.TestCase):
         check_is_fitted(self.clf, ["fitted_"])
 
     def test_C_bad_value(self):
-        clf = RSvm(C=-1)
+        self.clf.set_params(**{"C": -1})
         with self.assertRaises(ValueError):
-            clf.fit(*self.get_dataset())
+            self.clf.fit(*self.get_dataset())
 
     def test_not_binary(self):
         with self.assertRaises(ValueError):
             self.clf.fit(*self.get_dataset(binary=False))
 
     def test_predict(self):
+        self.clf.set_params(**{"max_iter": 1000})
         X, y = self.get_dataset()
         computed = self.clf.fit(X, y).predict(X)
         self.assertListEqual(y.tolist(), computed.tolist())
