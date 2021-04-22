@@ -1,6 +1,14 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.multiclass import (
+    check_classification_targets,
+    type_of_target,
+)
+from sklearn.utils.validation import (
+    check_X_y,
+    check_array,
+    check_is_fitted,
+)
 
 
 class RSvm(BaseEstimator, ClassifierMixin):
@@ -8,10 +16,11 @@ class RSvm(BaseEstimator, ClassifierMixin):
         self,
         C: float = 1,
         kernel: str = "linear",
-        max_iter: int = 10000,
+        max_iter: int = 1000,
         random_state: int = None,
         degree: int = 3,
         gamma: float = 1.0,
+        verbose: bool = False,
     ):
         self.C = C
         self.kernel = kernel
@@ -19,32 +28,7 @@ class RSvm(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
         self.degree = degree
         self.gamma = gamma
-
-    @staticmethod
-    def normalize_label(y: np.array) -> np.array:
-        """Convert labels to -1, 1
-
-        Parameters
-        ----------
-        y : np.array
-            array of binary labels
-
-        Returns
-        -------
-        np.array
-            normalized array of labels (-1, 1)
-
-        Raises
-        ------
-        ValueError
-            if labels are not binary
-        """
-        labels = np.unique(y)
-        if len(labels) > 2:
-            raise ValueError("Labels shoud be binary")
-        result = y.copy()
-        result[y == 0] = -1
-        return result
+        self.verbose = verbose
 
     def fit(self, X: np.array, y: np.array) -> "RSvm":
         if self.C < 0:
@@ -57,7 +41,15 @@ class RSvm(BaseEstimator, ClassifierMixin):
                 -self.gamma * np.sum((y - x[:, np.newaxis]) ** 2, axis=-1)
             ),
             "linear": lambda x, y: np.dot(x, y.T),
+            "sigmoid": lambda x, y: np.tanh(self.gamma * np.dot(x, y.T)),
         }[self.kernel]
+        if type_of_target(y) != "binary":
+            labels = np.unique(y)
+            raise ValueError(
+                f"Only binary problems allowed, found {labels} labels"
+            )
+        check_classification_targets(y)
+        X, y = check_X_y(X, y)
         # self.y_ = RSvm.normalize_label(y)
         self.X_ = X.copy()
         self.y_ = y * 2 - 1
@@ -68,7 +60,7 @@ class RSvm(BaseEstimator, ClassifierMixin):
         )
 
         for iter in range(self.max_iter):
-            if iter % 100 == 0:
+            if self.verbose and iter % 100 == 0:
                 print(f"{iter}, ", end="", flush=True)
             for idxM in range(len(self._lambdas)):
                 idxL = np.random.randint(0, len(self._lambdas))
@@ -114,4 +106,5 @@ class RSvm(BaseEstimator, ClassifierMixin):
 
     def predict(self, X: np.array) -> np.array:
         check_is_fitted(self, ["fitted_"])
+        X = check_array(X)
         return (np.sign(self.decision_function(X)) + 1) // 2

@@ -1,4 +1,3 @@
-import numpy as np
 from sklearn.datasets import load_iris
 import unittest
 from rsvm import RSvm
@@ -19,6 +18,12 @@ class RSvm_test(unittest.TestCase):
             y[y == 2] = 1
         return X, y
 
+    def test_verbose(self):
+        X, y = self.get_dataset()
+        self.clf.set_params(**{"verbose": True})
+        self.clf.fit(X, y)
+        self.assertTrue(self.clf.verbose)
+
     def test_fit(self):
         X, y = self.get_dataset()
         self.clf.fit(X, y)
@@ -36,8 +41,7 @@ class RSvm_test(unittest.TestCase):
     def test_predict(self):
         X, y = self.get_dataset()
         computed = self.clf.fit(X, y).predict(X)
-        expected = np.ones((X.shape[0],), dtype=np.int8).tolist()
-        self.assertListEqual(expected, computed.tolist())
+        self.assertListEqual(y.tolist(), computed.tolist())
 
     def test_predict_not_fitted(self):
         X, y = self.get_dataset()
